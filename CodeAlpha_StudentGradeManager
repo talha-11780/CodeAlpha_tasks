@@ -1,0 +1,269 @@
+package com.mycompany.studentgrademanager;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class StudentGradeManager {
+
+    static class Student {
+        String name;
+        ArrayList<Double> scores;
+
+        Student(String name) {
+            this.name = name;
+            this.scores = new ArrayList<>();
+        }
+
+        double getAverage() {
+            if (scores.isEmpty()) return 0.0;
+            double sum = 0;
+            for (double s : scores) sum += s;
+            return sum / scores.size();
+        }
+
+        double getHighest() {
+            if (scores.isEmpty()) return 0.0;
+            double max = scores.get(0);
+            for (double s : scores) if (s > max) max = s;
+            return max;
+        }
+
+        double getLowest() {
+            if (scores.isEmpty()) return 0.0;
+            double min = scores.get(0);
+            for (double s : scores) if (s < min) min = s;
+            return min;
+        }
+
+        char getGrade() {
+            double avg = getAverage();
+            if (avg >= 90) return 'A';
+            else if (avg >= 80) return 'B';
+            else if (avg >= 70) return 'C';
+            else if (avg >= 60) return 'D';
+            else return 'F';
+        }
+    }
+
+    private static ArrayList<Student> students = new ArrayList<>();
+    private static Scanner scanner = new Scanner(System.in);
+
+    public static void main(String[] args) {
+        boolean running = true;
+
+        System.out.println("=================================================");
+        System.out.println("       STUDENT GRADE MANAGEMENT SYSTEM");
+        System.out.println("=================================================");
+
+        while (running) {
+            printMenu();
+            int choice = readInt("Enter your choice: ");
+
+            switch (choice) {
+                case 1:
+                    addStudent();
+                    break;
+                case 2:
+                    addScoresToStudent();
+                    break;
+                case 3:
+                    viewStudentReport();
+                    break;
+                case 4:
+                    displaySummaryReport();
+                    break;
+                case 5:
+                    deleteStudent();
+                    break;
+                case 6:
+                    running = false;
+                    System.out.println("\nExiting program. Goodbye!");
+                    break;
+                default:
+                    System.out.println("Invalid choice. Please select between 1 and 6.\n");
+            }
+        }
+        scanner.close();
+    }
+
+    private static void printMenu() {
+        System.out.println("\n-------------------------------------------------");
+        System.out.println("1. Add New Student");
+        System.out.println("2. Add Scores to a Student");
+        System.out.println("3. View Individual Student Report");
+        System.out.println("4. Display Summary Report (All Students)");
+        System.out.println("5. Delete a Student");
+        System.out.println("6. Exit");
+        System.out.println("-------------------------------------------------");
+    }
+
+    private static void addStudent() {
+        System.out.print("Enter student name: ");
+        String name = scanner.nextLine().trim();
+
+        if (name.isEmpty()) {
+            System.out.println("Name cannot be empty.");
+            return;
+        }
+        if (findStudent(name) != null) {
+            System.out.println("A student with this name already exists.");
+            return;
+        }
+
+        Student newStudent = new Student(name);
+
+        int numScores = readInt("How many scores would you like to enter now? (0 to skip): ");
+        for (int i = 0; i < numScores; i++) {
+            double score = readDouble("  Enter score " + (i + 1) + " (0-100): ");
+            newStudent.scores.add(score);
+        }
+
+        students.add(newStudent);
+        System.out.println("Student \"" + name + "\" added successfully.");
+    }
+
+    private static void addScoresToStudent() {
+        Student s = selectStudent();
+        if (s == null) return;
+
+        int numScores = readInt("How many scores would you like to add? ");
+        for (int i = 0; i < numScores; i++) {
+            double score = readDouble("  Enter score " + (i + 1) + " (0-100): ");
+            s.scores.add(score);
+        }
+        System.out.println("Scores added to \"" + s.name + "\".");
+    }
+
+    private static void viewStudentReport() {
+        Student s = selectStudent();
+        if (s == null) return;
+
+        System.out.println("\n--- Report for " + s.name + " ---");
+        if (s.scores.isEmpty()) {
+            System.out.println("No scores recorded yet.");
+            return;
+        }
+        System.out.println("Scores       : " + s.scores);
+        System.out.printf("Average      : %.2f%n", s.getAverage());
+        System.out.printf("Highest      : %.2f%n", s.getHighest());
+        System.out.printf("Lowest       : %.2f%n", s.getLowest());
+        System.out.println("Letter Grade : " + s.getGrade());
+    }
+
+    private static void displaySummaryReport() {
+        if (students.isEmpty()) {
+            System.out.println("No students have been added yet.");
+            return;
+        }
+
+        System.out.println("\n=================================================================");
+        System.out.println("                         SUMMARY REPORT");
+        System.out.println("=================================================================");
+        System.out.printf("%-20s %-10s %-10s %-10s %-7s%n",
+                "Name", "Average", "Highest", "Lowest", "Grade");
+        System.out.println("-----------------------------------------------------------------");
+
+        double classTotal = 0;
+        double classHighest = Double.NEGATIVE_INFINITY;
+        double classLowest = Double.POSITIVE_INFINITY;
+        int studentsWithScores = 0;
+        String topStudent = "";
+        String bottomStudent = "";
+
+        for (Student s : students) {
+            if (s.scores.isEmpty()) {
+                System.out.printf("%-20s %-10s %-10s %-10s %-7s%n",
+                        s.name, "-", "-", "-", "-");
+                continue;
+            }
+
+            double avg = s.getAverage();
+            double high = s.getHighest();
+            double low = s.getLowest();
+
+            System.out.printf("%-20s %-10.2f %-10.2f %-10.2f %-7c%n",
+                    s.name, avg, high, low, s.getGrade());
+
+            classTotal += avg;
+            studentsWithScores++;
+
+            if (high > classHighest) {
+                classHighest = high;
+                topStudent = s.name;
+            }
+            if (low < classLowest) {
+                classLowest = low;
+                bottomStudent = s.name;
+            }
+        }
+
+        System.out.println("-----------------------------------------------------------------");
+
+        if (studentsWithScores > 0) {
+            double classAverage = classTotal / studentsWithScores;
+            System.out.printf("Class Average Score : %.2f%n", classAverage);
+            System.out.printf("Class Highest Score : %.2f (%s)%n", classHighest, topStudent);
+            System.out.printf("Class Lowest Score  : %.2f (%s)%n", classLowest, bottomStudent);
+        } else {
+            System.out.println("No scores recorded for any student yet.");
+        }
+        System.out.println("=================================================================");
+    }
+
+    private static void deleteStudent() {
+        Student s = selectStudent();
+        if (s == null) return;
+
+        students.remove(s);
+        System.out.println("Student \"" + s.name + "\" deleted.");
+    }
+
+    private static Student findStudent(String name) {
+        for (Student s : students) {
+            if (s.name.equalsIgnoreCase(name)) return s;
+        }
+        return null;
+    }
+
+    private static Student selectStudent() {
+        if (students.isEmpty()) {
+            System.out.println("No students available. Please add one first.");
+            return null;
+        }
+        System.out.print("Enter student name: ");
+        String name = scanner.nextLine().trim();
+        Student s = findStudent(name);
+        if (s == null) {
+            System.out.println("Student not found.");
+        }
+        return s;
+    }
+
+    private static int readInt(String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String line = scanner.nextLine().trim();
+            try {
+                return Integer.parseInt(line);
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid whole number.");
+            }
+        }
+    }
+
+    private static double readDouble(String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String line = scanner.nextLine().trim();
+            try {
+                double val = Double.parseDouble(line);
+                if (val < 0 || val > 100) {
+                    System.out.println("Score must be between 0 and 100.");
+                    continue;
+                }
+                return val;
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid number.");
+            }
+        }
+    }
+}
